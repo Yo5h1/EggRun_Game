@@ -250,6 +250,100 @@ button:active {
   box-shadow: 3px 3px 0 #27323a, inset 0 0 0 2px #e8754c;
 }
 
+.picker-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.skin-slot {
+  position: relative;
+  display: inline-flex;
+}
+
+.remove-skin-btn {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-width: 2px;
+  border-radius: 50%;
+  background: #e8754c;
+  box-shadow: 2px 2px 0 #27323a;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.add-skin-btn {
+  border-style: dashed;
+  background: #e8dfc0;
+}
+
+.add-plus {
+  display: grid;
+  place-items: center;
+  height: 30px;
+  width: 30px;
+  border: 2px dashed #27323a;
+  font-size: 18px;
+  color: #657069;
+}
+
+.custom-name-form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  border: 3px solid #27323a;
+  border-radius: 4px;
+  background: #fffce8;
+  box-shadow: 4px 4px 0 #d8cdad;
+}
+
+.custom-name-form label {
+  font-size: 9px;
+  color: #657069;
+}
+
+.custom-name-form input {
+  width: 150px;
+  padding: 8px 10px;
+  border: 2px solid #27323a;
+  border-radius: 4px;
+  background: #fff;
+  color: #27323a;
+  font: inherit;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.custom-name-form button {
+  padding: 8px 12px;
+  font-size: 9px;
+}
+
+.undo-add-btn {
+  padding: 7px 10px;
+  border-width: 2px;
+  background: #d8cdad;
+  font-size: 8px;
+  box-shadow: 3px 3px 0 #27323a;
+}
+
+.custom-msg {
+  margin: 0;
+  color: #b8332a;
+  font-size: 9px;
+  font-weight: bold;
+}
+
 @media (max-width: 600px) {
   .portfolio-game {
     padding: 16px;
@@ -263,6 +357,19 @@ button:active {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+
+  .picker-wrap {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .skin-picker {
+    justify-content: flex-start;
+  }
+
+  .custom-name-form input {
+    width: 100%;
   }
 
   .instructions {

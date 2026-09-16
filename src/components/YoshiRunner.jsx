@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import yoshiRunSrc from '../assets/yoshi-run.png';
 import yoshiPointSrc from '../assets/yoshi-point.png';
+import defaultCoinSrc from '../assets/default-coin.png';
 import bunnyMochiSrc from '../assets/bunny-mochi.png';
 import bunnyPistachoSrc from '../assets/bunny-pistacho.png';
 import mikuSrc from '../assets/miku.png';
@@ -21,6 +22,11 @@ const IF_TIME = 70;
 const POWER_TIME = 420;
 const STEP = 1000 / 60;
 
+const CUSTOM_SKINS_KEY = 'Yoshi-run-custom-skins';
+const MAX_CUSTOM_SKINS = 8;
+const MAX_CUSTOM_SIZE = 1024 * 1024;
+const HERO_MAX_W = 130;
+
 const SKINS = [
   { id: 'Yoshi', name: 'YoZzhi', sprite: yoshiRunSrc, point: yoshiPointSrc },
   { id: 'mochi', name: 'BUNNY MOCHI', sprite: bunnyMochiSrc, point: bunnyPointSrc },
@@ -37,13 +43,47 @@ SKINS.forEach((s) => {
   s.pointImg = pointImg;
 });
 
+function readCustomSkins() {
+  let raw = [];
+  try {
+    raw = JSON.parse(localStorage.getItem(CUSTOM_SKINS_KEY) || '[]');
+  } catch {
+    raw = [];
+  }
+  if (!Array.isArray(raw)) raw = [];
+  return raw
+    .filter((c) => c && typeof c.id === 'string' && typeof c.sprite === 'string')
+    .map((c) => {
+      const img = new Image();
+      img.src = c.sprite;
+      const pointImg = new Image();
+      pointImg.src = defaultCoinSrc;
+      return { id: c.id, name: c.name || 'PERSONAJE', sprite: c.sprite, point: defaultCoinSrc, img, pointImg };
+    });
+}
+
+function saveCustomSkins(list) {
+  localStorage.setItem(
+    CUSTOM_SKINS_KEY,
+    JSON.stringify(list.map((s) => ({ id: s.id, name: s.name, sprite: s.sprite }))),
+  );
+}
+
+function findSkin(id) {
+  return [...SKINS, ...readCustomSkins()].find((s) => s.id === id) || null;
+}
+
 function skinAspect(img, fallback = 183 / 149) {
   return img.width > 0 && img.height > 0 ? img.width / img.height : fallback;
 }
 
+function heroWidth(img) {
+  return Math.max(10, Math.min(HERO_MAX_W, skinAspect(img) * HERO_H));
+}
+
 function defaultValueSkins() {
   const saved = localStorage.getItem('Yoshi-run-skin');
-  return SKINS.some((s) => s.id === saved) ? saved : SKINS[0].id;
+  return findSkin(saved) ? saved : SKINS[0].id;
 }
 
 const PAL_DAY = {
@@ -146,7 +186,7 @@ for (let i = 0; i < 14; i++) {
 
 function createGame() {
   const initial = defaultValueSkins();
-  const skin = SKINS.find((s) => s.id === initial);
+  const skin = findSkin(initial) || SKINS[0];
   return {
     running: false,
     frame: 0,
@@ -194,6 +234,13 @@ export default function YoshiRunner() {
   const [result, setResult] = useState(null);
   const [skinId, setSkinId] = useState(defaultValueSkins);
   const gameRef = useRef(createGame());
+  const [customSkins, setCustomSkins] = useState(readCustomSkins);
+  const [pendingAdd, setPendingAdd] = useState(null);
+  const [customMsg, setCustomMsg] = useState('');
+  const [lastAddedId, setLastAddedId] = useState(null);
+  const fileInputRef = useRef(null);
+  const nameInputRef = useRef(null);
+  const customIdRef = useRef(customSkins.length);
 
   useEffect(() => {
     statusRef.current = status;
@@ -203,15 +250,120 @@ export default function YoshiRunner() {
     setMuted(toggleMute());
   }
 
+  async function onFileChosen(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (file.type !== 'image/png' && !file.name.toLowerCase().endsWith('.png')) {
+      setCustomMsg('Solo se permiten imágenes PNG.');
+      return;
+    }
+    if (file.size > MAX_CUSTOM_SIZE) {
+      setCustomMsg('La imagen supera el tamaño máximo de 1 MB.');
+      return;
+    }
+    if (customSkins.length >= MAX_CUSTOM_SKINS) {
+      setCustomMsg(`Máximo ${MAX_CUSTOM_SKINS} personajes personalizados.`);
+      return;
+    }
+    const dataUrl = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+    if (!dataUrl || !dataUrl.startsWith('data:image/png;')) {
+      setCustomMsg('El archivo no es un PNG válido.');
+      return;
+    }
+    const defName =
+      file.name.replace(/\.png$/i, '').trim().toUpperCase().slice(0, 20) || 'PERSONAJE';
+    setPendingAdd({ dataUrl, defName });
+    setCustomMsg('');
+  }
+
+  function confirmAdd() {
+    if (!pendingAdd) return;
+    const name =
+      (nameInputRef.current?.value || '').trim().toUpperCase().slice(0, 20) || 'PERSONAJE';
+    const img = new Image();
+    img.src = pendingAdd.dataUrl;
+    const pointImg = new Image();
+    pointImg.src = defaultCoinSrc;
+    const skin = {
+      id: `custom-${++customIdRef.current}`,
+      name,
+      sprite: pendingAdd.dataUrl,
+      point: defaultCoinSrc,
+      img,
+      pointImg,
+    };
+    const next = [...customSkins, skin];
+    try {
+      saveCustomSkins(next);
+    } catch {
+      setCustomMsg('No se pudo guardar: la imagen supera el almacenamiento disponible.');
+      setPendingAdd(null);
+      return;
+    }
+    setCustomSkins(next);
+    setLastAddedId(skin.id);
+    setPendingAdd(null);
+    setCustomMsg('');
+    selectSkin(skin.id);
+  }
+
+  function cancelAdd() {
+    setPendingAdd(null);
+    setCustomMsg('');
+  }
+
+  function removeSkin(id) {
+    setCustomSkins((prev) => {
+      const remains = prev.filter((s) => s.id !== id);
+      try {
+        saveCustomSkins(remains);
+      } catch {
+        // best effort: si no se puede guardar, se mantiene en memoria
+      }
+      return remains;
+    });
+    if (lastAddedId === id) setLastAddedId(null);
+    if (skinId === id) {
+      const first = SKINS[0];
+      const state = gameRef.current;
+      state.skinImg = first.img;
+      state.skinPoint = first.pointImg;
+      state.hero.w = heroWidth(first.img);
+      state.hero.h = HERO_H;
+      localStorage.setItem('Yoshi-run-skin', first.id);
+      setSkinId(first.id);
+      renderRef.current?.();
+    }
+    setCustomMsg('');
+  }
+
+  function undoLastAdd() {
+    if (lastAddedId) removeSkin(lastAddedId);
+  }
+
   function selectSkin(id) {
-    const skin = SKINS.find((s) => s.id === id);
+    const skin = findSkin(id);
     if (!skin || id === skinId) return;
     initAudio();
     const state = gameRef.current;
     state.skinImg = skin.img;
     state.skinPoint = skin.pointImg;
-    state.hero.w = Math.max(10, skinAspect(skin.img) * HERO_H);
+    state.hero.w = heroWidth(skin.img);
     state.hero.h = HERO_H;
+    skin.img
+      .decode()
+      .then(() => {
+        const st = gameRef.current;
+        if (st.skinImg === skin.img) st.hero.w = heroWidth(skin.img);
+        renderRef.current?.();
+      })
+      .catch(() => {});
     localStorage.setItem('Yoshi-run-skin', id);
     setSkinId(id);
     sfx.power();
@@ -646,7 +798,7 @@ export default function YoshiRunner() {
         vy: 0,
         grounded: true,
         jumps: 2,
-        w: Math.max(10, skinAspect(state.skinImg) * HERO_H),
+        w: heroWidth(state.skinImg),
         h: HERO_H,
       });
       state.ducking = false;
@@ -750,6 +902,7 @@ export default function YoshiRunner() {
 
     const onKeyDown = (event) => {
       if (event.target instanceof HTMLButtonElement) return;
+      if (event.target instanceof HTMLInputElement) return;
       const code = event.code;
       if (code === 'Space' || code === 'ArrowUp') {
         event.preventDefault();
@@ -797,9 +950,16 @@ export default function YoshiRunner() {
     actionRef.current = handleAction;
     renderRef.current = render;
 
-    Promise.all([...SKINS.flatMap((s) => [s.img, s.pointImg]), eggImg, coinImg].map((img) => img.decode().catch(() => {}))).then(() => {
+    Promise.all(
+      [
+        ...SKINS.flatMap((s) => [s.img, s.pointImg]),
+        ...readCustomSkins().flatMap((s) => [s.img, s.pointImg]),
+        eggImg,
+        coinImg,
+      ].map((img) => img.decode().catch(() => {})),
+    ).then(() => {
       if (!state.skinImg) state.skinImg = SKINS[0].img;
-      state.hero.w = Math.max(10, skinAspect(state.skinImg) * HERO_H);
+      state.hero.w = heroWidth(state.skinImg);
       state.hero.h = HERO_H;
       if (!state.raf) render();
     });
@@ -819,13 +979,14 @@ export default function YoshiRunner() {
   }, []);
 
   const overlayVisible = status === 'idle' || status === 'over' || status === 'paused';
+  const allSkins = [...SKINS, ...customSkins];
 
   return (
     <section className="game-card" aria-labelledby="game-title">
       <div className="game-header">
         <div>
           <p className="eyebrow">MINI JUEGO</p>
-          <h1 id="game-title">YoZzhi Egg Run</h1>
+          <h1 id="game-title">Egg Run</h1>
         </div>
         <p className="instructions">
           ESPACIO/↑/TOCAR SALTAR (×2 EN EL AIRE) · ↓ AGACHARSE · P PAUSA · M SONIDO
@@ -870,29 +1031,81 @@ export default function YoshiRunner() {
 
       <div className="char-picker">
         <span className="p-label">PERSONAJE</span>
-        <div className="skin-picker" role="radiogroup" aria-label="Elegir personaje">
-          {SKINS.map((s) => (
+        <div className="picker-wrap">
+          <div className="skin-picker" role="radiogroup" aria-label="Elegir personaje">
+            {allSkins.map((s) => (
+              <div className="skin-slot" key={s.id}>
+                <button
+                  type="button"
+                  className={`skin-btn${s.id === skinId ? ' active' : ''}`}
+                  onClick={() => selectSkin(s.id)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  aria-pressed={s.id === skinId}
+                  aria-label={`Usar ${s.name}`}
+                >
+                  <img className="skin-point" src={s.point} alt="" />
+                  <span>{s.name}</span>
+                </button>
+                {customSkins.some((c) => c.id === s.id) && (
+                  <button
+                    type="button"
+                    className="remove-skin-btn"
+                    onClick={() => removeSkin(s.id)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    aria-label={`Eliminar ${s.name}`}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
             <button
-              key={s.id}
               type="button"
-              className={`skin-btn${s.id === skinId ? ' active' : ''}`}
-              onClick={() => selectSkin(s.id)}
+              className="skin-btn add-skin-btn"
+              onClick={() => fileInputRef.current?.click()}
               onMouseDown={(e) => e.preventDefault()}
-              aria-pressed={s.id === skinId}
-              aria-label={`Usar ${s.name}`}
             >
-              <img className="skin-point" src={s.point} alt="" />
-              <span>{s.name}</span>
+              <span className="add-plus">+</span>
+              <span>AÑADIR</span>
             </button>
-          ))}
+          </div>
+
+          {pendingAdd && (
+            <div className="custom-name-form">
+              <label htmlFor="custom-name">NOMBRE DEL PERSONAJE</label>
+              <input id="custom-name" ref={nameInputRef} type="text" maxLength={20} defaultValue={pendingAdd.defName} autoFocus />
+              <button type="button" onClick={confirmAdd} onMouseDown={(e) => e.preventDefault()}>GUARDAR</button>
+              <button type="button" onClick={cancelAdd} onMouseDown={(e) => e.preventDefault()}>CANCELAR</button>
+            </div>
+          )}
+
+          {!pendingAdd && lastAddedId && (
+            <button
+              type="button"
+              className="undo-add-btn"
+              onClick={undoLastAdd}
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              ↩ DESHACER ÚLTIMA ADICIÓN
+            </button>
+          )}
+
+          {customMsg && (
+            <p className="custom-msg" role="status">{customMsg}</p>
+          )}
         </div>
       </div>
+
+      <input ref={fileInputRef} type="file" accept="image/png" hidden onChange={onFileChosen} />
 
       <div className="effects-bar" ref={effectRef} hidden aria-live="polite" />
 
       <div className="game-footer" aria-live="polite">
         <span className="points">
-          <img src={(SKINS.find((s) => s.id === skinId) || SKINS[0]).point} alt="" className="coin" />
+          <img src={(allSkins.find((s) => s.id === skinId) || allSkins[0]).point} alt="" className="coin" />
           <span>PUNTOS <strong ref={scoreRef}>0000</strong></span>
         </span>
         <span>MONEDAS <strong ref={coinRef}>00</strong></span>
