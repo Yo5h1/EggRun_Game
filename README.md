@@ -2,7 +2,7 @@
 
 Mini juego **runner infinito (endless runner)** en pixel art, hecho con **React + Vite** y dibujado sobre **Canvas**. Controla a **YoZzhi** mientras corre por un mundo cuyo paisaje cambia de día a atardecer y de noche: esquiva huevos y pájaros, agachate, salta en doble salto, recoge monedas y supera tu récord.
 
-![Egg Run](src/assets/EggRun.webp)
+<img src="src/assets/EggRun.webp" alt="Egg Run" width="640">
 
 ## 🎮 Cómo se juega
 
@@ -48,11 +48,11 @@ Incluye nubes a la deriva, colinas, árboles, estrellas titilantes (de noche) y 
 Elige tu corredor con el selector **PERSONAJE** antes de empezar. Cada uno tiene su propio sprite y su icono de moneda.
 
 | Personaje | Sprite | Moneda |
-| --- | --- | --- |
-| **YoZzhi** | ![YoZzhi](src/assets/yoshi-run.png) | ![Moneda YoZzhi](src/assets/yoshi-point.png) |
-| **BUNNY MOCHI** | ![BUNNY MOCHI](src/assets/bunny-mochi.png) | ![Moneda Bunny](src/assets/bunny-point.webp) |
-| **BUNNY PISTACHO** | ![BUNNY PISTACHO](src/assets/bunny-pistacho.png) | ![Moneda Bunny](src/assets/bunny-point.webp) |
-| **MIKU** | ![MIKU](src/assets/miku.png) | ![Moneda MIKU](src/assets/miku-point.png) |
+| --- | :---: | :---: |
+| **YoZzhi** | <img src="src/assets/yoshi-run.png" alt="YoZzhi" width="160"> | <img src="src/assets/yoshi-point.png" alt="Moneda YoZzhi" width="56"> |
+| **BUNNY MOCHI** | <img src="src/assets/bunny-mochi.png" alt="BUNNY MOCHI" width="100"> | <img src="src/assets/bunny-point.webp" alt="Moneda Bunny" width="56"> |
+| **BUNNY PISTACHO** | <img src="src/assets/bunny-pistacho.png" alt="BUNNY PISTACHO" width="100"> | <img src="src/assets/bunny-point.webp" alt="Moneda Bunny" width="56"> |
+| **MIKU** | <img src="src/assets/miku.png" alt="MIKU" width="100"> | <img src="src/assets/miku-point.png" alt="Moneda MIKU" width="56"> |
 
 > **BUNNY MOCHI** y **BUNNY PISTACHO** comparten el mismo icono de moneda (`bunny-point.webp`), mientras que **YoZzhi** y **MIKU** tienen cada uno el suyo.
 
@@ -60,14 +60,14 @@ Elige tu corredor con el selector **PERSONAJE** antes de empezar. Cada uno tiene
 
 - Pulsa **AÑADIR** y sube cualquier imagen **PNG (máx. 1 MB)** para usarla como personaje.
 - Ponle nombre y queda guardada en tu navegador (`localStorage`).
-- Los personajes personalizados usan como moneda el icono por defecto: ![Moneda por defecto](src/assets/default-coin.png) (`default-coin.png`).
+- Los personajes personalizados usan como moneda el icono por defecto: <img src="src/assets/default-coin.png" alt="Moneda por defecto" width="28"> (`default-coin.png`).
 - Puedes tener hasta **8 personajes personalizados** y borrarlos o deshacer la última adición en cualquier momento.
 
 ## 🐣 Obstáculos
 
 | Obstáculo | Sprite |
-| --- | --- |
-| **Huevo** 🥚 (en el suelo, tamaño aleatorio) | ![Huevo](src/assets/egg.png) |
+| --- | :---: |
+| **Huevo** 🥚 (en el suelo, tamaño aleatorio) | <img src="src/assets/egg.png" alt="Huevo" width="56"> |
 | **Pájaro** 🐦 (volador, dibujado con Canvas) | — |
 
 ## 🎵 Sonido
