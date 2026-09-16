@@ -2,7 +2,7 @@
 
 Mini juego **runner infinito (endless runner)** en pixel art, hecho con **React + Vite** y dibujado sobre **Canvas**. Controla a **YoZzhi** mientras corre por un mundo cuyo paisaje cambia de día a atardecer y de noche: esquiva huevos y pájaros, agachate, salta en doble salto, recoge monedas y supera tu récord.
 
-<img src="src/assets/EggRun.webp" alt="Egg Run" width="640">
+<img src="src/assets/EggRun.webp" alt="Egg Run">
 
 ## 🎮 Cómo se juega
 
